@@ -1,17 +1,19 @@
 # Tokenizer Efficiency Across Languages
 
-How many tokens does it cost to say the same thing in different languages? I'm trilingual (Russian, Mongolian, English) and kept noticing that AI tools — translation, speech, pronunciation — consistently struggled more with Mongolian than with my other languages. This project tests one concrete, measurable reason why: **tokenizers don't encode all languages equally efficiently**, and that inefficiency eats directly into a model's usable context window and inference cost before it ever gets to "understanding" anything.
+i use AI language tools a lot to practice my russian/ japanese/ french, and along the way i kept running into the same annoying pattern: whenever i'd blank on a word in mongolian (my native second language) and try to get help from a translation tool or speech AI, the results were consistently rough. mispronunciations, awkward translations, stuff that just felt broken in a way it never did for russian or english. happened across basically every model i tried, not just one.
 
-## Method
+that made me curious about why, specifically not just "AI is bad at mongolian" as a vibe, but an actual measurable reason. this project tests one concrete hypothesis: tokenizers don't encode all languages equally efficiently, and that inefficiency eats directly into a model's usable context window and inference cost before it ever gets to "understanding" anything. so i picked a handful of tokenizers used by real, widely-deployed models and measured it myself - thanks to huggingface of course!
 
-- **Data**: [FLORES-200](https://github.com/facebookresearch/flores), Meta's parallel evaluation corpus — the same set of sentences, professionally translated into 200 languages. Using parallel data (not independently written sentences) means differences in token count reflect the tokenizer, not differences in what was said.
-- **Languages tested**: English (baseline), Russian, Mongolian (Halh, Cyrillic script), Japanese, Czech.
-- **Tokenizers tested**: GPT-4 (`cl100k_base`), GPT-4o (`o200k_base`), Llama-3, mBERT, Mistral-7B, NLLB-200 (a tokenizer purpose-built for 200 languages).
-- **Metric**: total token count per language, normalized against English (e.g. a ratio of 2.0 means that language took twice as many tokens as English for the same content).
+## the method
 
-## Findings
+- **data**: [FLORES-200](https://github.com/facebookresearch/flores), Meta's parallel evaluation corpus — the same set of sentences, professionally translated into 200 languages. Using parallel data (not independently written sentences) means differences in token count reflect the tokenizer, not differences in what was said.
+- **languages tested**: english (baseline), russian, mongolian (cyrillic script), japanese, zzech.
+- **tokenizers tested**: GPT-4 (`cl100k_base`), GPT-4o (`o200k_base`), Llama-3, mBERT, Mistral-7B, NLLB-200 (a tokenizer purpose-built for 200 languages)
+- **metric**: total token count per language, normalized against English (e.g. a ratio of 2.0 means that language took twice as many tokens as English for the same content)
 
-Mongolian was the least efficiently tokenized language across **every tokenizer tested — 6 for 6** — ranging from **1.39x** more tokens (NLLB-200) up to **3.74x** more tokens (GPT-4's `cl100k_base`) than English for identical content.
+## the findings
+
+mongolian was the least efficiently tokenized language across **every tokenizer tested — 6 for 6** — ranging from **1.39x** more tokens (NLLB-200) up to **3.74x** more tokens (GPT-4's `cl100k_base`) than English for identical content.
 
 | Language  | GPT-4 (cl100k) | GPT-4o (o200k) | Llama-3 | mBERT | Mistral | NLLB-200 |
 |-----------|---------------:|----------------:|--------:|------:|--------:|---------:|
@@ -20,19 +22,19 @@ Mongolian was the least efficiently tokenized language across **every tokenizer 
 | Mongolian | **3.74x** | **1.91x** | **3.15x** | **1.96x** | **2.88x** | **1.39x** |
 | Russian   | 2.49x | 1.46x | 1.66x | 1.46x | 1.84x | 1.36x |
 
-![Tokenizer efficiency chart](tokenizer_efficiency_chart.png)
+![Tokenizer efficiency chart](tokenizer-project-bar-chart.png)
 
-The clearest pattern is by tokenizer *purpose*, not release date or model family. NLLB-200 — trained specifically for multilingual coverage across 200 languages — is the best performer on every single language tested. General-purpose tokenizers, including Llama-3 (a comparatively recent, widely-used open model), show 2-3x worse Mongolian efficiency than NLLB, landing much closer to GPT-4 and Mistral than to NLLB. That consistency across otherwise very different models suggests the gap isn't a quirk of any one lab's training data — it's what happens by default when multilingual coverage isn't an explicit design goal.
+the clearest pattern is by tokenizer *purpose*, not release date or model family. NLLB-200 — trained specifically for multilingual coverage across 200 languages — is the best performer on every single language tested. General-purpose tokenizers, including Llama-3 (a comparatively recent, widely-used open model), show 2-3x worse Mongolian efficiency than NLLB, landing much closer to GPT-4 and Mistral than to NLLB. That consistency across otherwise very different models suggests the gap isn't a quirk of any one lab's training data — it's what happens by default when multilingual coverage isn't an explicit design goal.
 
-This isn't just a translation-quality footnote. More tokens per unit of meaning means less effective context window and higher inference cost for speakers of under-served languages — and NLLB's numbers show this gap is a design choice, not an unavoidable limit of the technology.
+this isn't just a translation-quality footnote. More tokens per unit of meaning means less effective context window and higher inference cost for speakers of under-served languages — and NLLB's numbers show this gap is a design choice, not an unavoidable limit of the technology.
 
-## Next steps
+## next steps...
 
 - Scale from 200 sentences to the full FLORES-200 dev set (~1000 sentences) to confirm the ratios hold.
 - Test whether the gap is about the *language* or the *script*, by comparing Mongolian in Cyrillic (`khk_Cyrl`) against traditional Mongolian script (`mon_Mong`).
 - Translate the token ratio into a real cost figure (e.g. $/word) using current API pricing.
 
-## Running it yourself
+## run this project yourself!!
 
 ```bash
 python3 -m venv tokenizer-env
